@@ -106,3 +106,13 @@ type LockoutPolicyResponse struct {
 	MaxFailedAttempts   int   `json:"max_failed_attempts"`
 	LockDurationSeconds int64 `json:"lock_duration_seconds"`
 }
+
+// SessionResponse biểu diễn thông tin thiết bị / phiên đăng nhập đang hoạt động.
+type SessionResponse struct {
+	ID        string    `json:"id"`
+	IP        string    `json:"ip"`
+	UserAgent string    `json:"user_agent"`
+	DeviceID  string    `json:"device_id"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}

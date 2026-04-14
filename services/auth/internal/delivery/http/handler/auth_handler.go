@@ -280,6 +280,67 @@ func (h *AuthHandler) UpdateLoginLockoutPolicy(c *gin.Context) {
 	})
 }
 
+// GetSessions xử lý GET /api/v1/auth/sessions.
+func (h *AuthHandler) GetSessions(c *gin.Context) {
+	userIDStr, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		response.Error(c, apperror.Unauthorized("user ID not found in context"))
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Error(c, apperror.Unauthorized("invalid user ID"))
+		return
+	}
+
+	sessions, err := h.authService.GetSessions(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	var sessionResp []dto.SessionResponse
+	for _, s := range sessions {
+		sessionResp = append(sessionResp, presenter.ToSessionResponse(s))
+	}
+
+	if sessionResp == nil {
+		sessionResp = []dto.SessionResponse{}
+	}
+
+	response.OK(c, sessionResp)
+}
+
+// DeleteSession xử lý DELETE /api/v1/auth/sessions/:id.
+func (h *AuthHandler) DeleteSession(c *gin.Context) {
+	userIDStr, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		response.Error(c, apperror.Unauthorized("user ID not found in context"))
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Error(c, apperror.Unauthorized("invalid user ID"))
+		return
+	}
+
+	sessionIDStr := c.Param("id")
+	sessionID, err := uuid.Parse(sessionIDStr)
+	if err != nil {
+		response.Error(c, apperror.ValidationError("invalid session ID format"))
+		return
+	}
+
+	if err := h.authService.DeleteSession(c.Request.Context(), userID, sessionID); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.NoContent(c)
+}
+
 // HealthCheck xử lý GET /health.
 func (h *AuthHandler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{

@@ -41,3 +41,15 @@ func ToRegisterResponse(user *domain.User) dto.RegisterResponse {
 		Message:                   "registration successful, please verify your email before logging in",
 	}
 }
+
+// ToSessionResponse chuyển đổi RefreshToken thành DTO công khai (loại bỏ token hash).
+func ToSessionResponse(session *domain.RefreshToken) dto.SessionResponse {
+	return dto.SessionResponse{
+		ID:        session.ID.String(),
+		IP:        session.IP,
+		UserAgent: session.UserAgent,
+		DeviceID:  session.DeviceID,
+		CreatedAt: session.CreatedAt,
+		ExpiresAt: session.ExpiresAt,
+	}
+}

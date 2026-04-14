@@ -43,6 +43,12 @@ type AuthService interface {
 	// GetProfile lấy thông tin user hiện tại.
 	GetProfile(ctx context.Context, userID uuid.UUID) (*User, error)
 
+	// GetSessions lấy danh sách các phiên đăng nhập (refresh token) đang active của user.
+	GetSessions(ctx context.Context, userID uuid.UUID) ([]*RefreshToken, error)
+
+	// DeleteSession xóa/thu hồi một phiên đăng nhập cụ thể theo ID.
+	DeleteSession(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
+
 	// ValidateToken xác thực access token và trả về thông tin user.
 	ValidateToken(ctx context.Context, accessToken string) (*User, error)
 

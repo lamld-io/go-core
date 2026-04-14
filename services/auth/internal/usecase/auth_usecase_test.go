@@ -138,17 +138,31 @@ func (r *mockTokenRepo) RevokeByUserID(_ context.Context, userID uuid.UUID) erro
 	return nil
 }
 
-func (r *mockTokenRepo) RevokeByID(_ context.Context, id uuid.UUID) error {
+func (r *mockTokenRepo) RevokeByIDAndUserID(_ context.Context, id, userID uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	for _, token := range r.tokens {
-		if token.ID == id {
+		if token.ID == id && token.UserID == userID {
 			token.Revoked = true
 		}
 	}
 
 	return nil
+}
+
+func (r *mockTokenRepo) ListByUserID(_ context.Context, userID uuid.UUID) ([]*domain.RefreshToken, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var result []*domain.RefreshToken
+	for _, token := range r.tokens {
+		if token.UserID == userID && !token.Revoked {
+			cloned := *token
+			result = append(result, &cloned)
+		}
+	}
+	return result, nil
 }
 
 func (r *mockTokenRepo) DeleteExpired(_ context.Context) error {
