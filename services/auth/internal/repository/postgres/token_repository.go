@@ -66,14 +66,35 @@ func (r *tokenRepository) RevokeByUserID(ctx context.Context, userID uuid.UUID) 
 	return nil
 }
 
-func (r *tokenRepository) RevokeByID(ctx context.Context, id uuid.UUID) error {
+func (r *tokenRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.RefreshToken, error) {
+	var models []model.TokenModel
+
+	result := r.db.WithContext(ctx).
+		Where("user_id = ? AND revoked = false", userID).
+		Order("created_at DESC").
+		Find(&models)
+
+	if result.Error != nil {
+		slog.ErrorContext(ctx, "failed to list tokens by user_id", "error", result.Error, "user_id", userID)
+		return nil, result.Error
+	}
+
+	tokens := make([]*domain.RefreshToken, 0, len(models))
+	for _, m := range models {
+		tokens = append(tokens, mapper.TokenToDomain(&m))
+	}
+
+	return tokens, nil
+}
+
+func (r *tokenRepository) RevokeByIDAndUserID(ctx context.Context, id, userID uuid.UUID) error {
 	result := r.db.WithContext(ctx).
 		Model(&model.TokenModel{}).
-		Where("id = ?", id).
+		Where("id = ? AND user_id = ?", id, userID).
 		Update("revoked", true)
 
 	if result.Error != nil {
-		slog.ErrorContext(ctx, "failed to revoke token by id", "error", result.Error, "token_id", id)
+		slog.ErrorContext(ctx, "failed to revoke token by id and user_id", "error", result.Error, "token_id", id, "user_id", userID)
 		return result.Error
 	}
 	return nil

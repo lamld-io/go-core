@@ -40,11 +40,14 @@ type TokenRepository interface {
 	// GetByTokenHash tìm refresh token theo hash. Trả về ErrTokenNotFound nếu không tồn tại.
 	GetByTokenHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
 
+	// ListByUserID lấy danh sách tất cả refresh token của một user (chưa bị thu hồi).
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*RefreshToken, error)
+
 	// RevokeByUserID thu hồi tất cả refresh token của một user.
 	RevokeByUserID(ctx context.Context, userID uuid.UUID) error
 
-	// RevokeByID thu hồi một refresh token cụ thể.
-	RevokeByID(ctx context.Context, id uuid.UUID) error
+	// RevokeByIDAndUserID thu hồi một refresh token cụ thể của user. Ngăn chặn IDOR.
+	RevokeByIDAndUserID(ctx context.Context, id, userID uuid.UUID) error
 
 	// DeleteExpired xoá các token đã hết hạn (dùng cho cleanup job).
 	DeleteExpired(ctx context.Context) error

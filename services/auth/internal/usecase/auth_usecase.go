@@ -313,7 +313,7 @@ func (uc *authUsecase) RefreshToken(ctx context.Context, refreshTokenStr string,
 		return nil, domain.ErrTokenRevoked
 	}
 
-	if err := uc.tokenRepo.RevokeByID(ctx, storedToken.ID); err != nil {
+	if err := uc.tokenRepo.RevokeByIDAndUserID(ctx, storedToken.ID, storedToken.UserID); err != nil {
 		slog.WarnContext(ctx, "failed to revoke old refresh token", "error", err)
 	}
 
@@ -367,6 +367,22 @@ func (uc *authUsecase) GetProfile(ctx context.Context, userID uuid.UUID) (*domai
 		return nil, err
 	}
 	return user, nil
+}
+
+func (uc *authUsecase) GetSessions(ctx context.Context, userID uuid.UUID) ([]*domain.RefreshToken, error) {
+	sessions, err := uc.tokenRepo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, apperror.InternalError("failed to get active sessions", err)
+	}
+	return sessions, nil
+}
+
+func (uc *authUsecase) DeleteSession(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
+	if err := uc.tokenRepo.RevokeByIDAndUserID(ctx, sessionID, userID); err != nil {
+		return apperror.InternalError("failed to delete session", err)
+	}
+	slog.InfoContext(ctx, "user session deleted", "user_id", userID, "session_id", sessionID)
+	return nil
 }
 
 func (uc *authUsecase) ValidateToken(ctx context.Context, accessToken string) (*domain.User, error) {
