@@ -1,0 +1,83 @@
+services:
+  # =============================================
+  # PostgreSQL — Database cho Auth Service
+  # =============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: base-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =============================================
+  # Auth Service — Xác thực, quản lý user, JWT
+  # =============================================
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: base-auth
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      SERVER_PORT: "8081"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: auth_db
+      DB_SSLMODE: disable
+      JWT_PRIVATE_KEY_PATH: /app/configs/keys/private.pem
+      JWT_PUBLIC_KEY_PATH: /app/configs/keys/public.pem
+      JWT_ACCESS_TOKEN_TTL: 15m
+      JWT_REFRESH_TOKEN_TTL: 168h
+      JWT_ISSUER: auth-service
+      PASSWORD_MIN_LENGTH: "8"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./configs/keys:/app/configs/keys:ro
+
+  # =============================================
+  # Gateway Service — API Gateway, proxy, auth
+  # =============================================
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: base-gateway
+    restart: unless-stopped
+    depends_on:
+      - auth-service
+    environment:
+      APP_ENV: development
+      SERVER_PORT: "8080"
+      JWT_PUBLIC_KEY_PATH: /app/configs/keys/public.pem
+      JWT_ISSUER: auth-service
+      ROUTES_CONFIG_PATH: /app/configs/routes.yaml
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_RPS: "100"
+      RATE_LIMIT_BURST: "200"
+      PROXY_TIMEOUT: 30s
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./configs/keys:/app/configs/keys:ro
+      - ./services/gateway/configs/routes.docker.yaml:/app/configs/routes.yaml:ro
+
+volumes:
+  postgres_data:

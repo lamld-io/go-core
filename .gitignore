@@ -1,0 +1,206 @@
+# =============================================================================
+# Go
+# =============================================================================
+
+# Binaries được build ra
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+*.out
+coverage.out
+coverage.html
+coverage.xml
+
+# Profiling
+*.prof
+*.pprof
+cpu.out
+mem.out
+
+# Go workspace (nếu không dùng workspace)
+go.work.sum
+
+# Vendor directory (nếu dùng go mod, không cần vendor)
+# vendor/
+
+# =============================================================================
+# Biến môi trường & Cấu hình nhạy cảm
+# =============================================================================
+
+# File .env thật (CHỈ commit .env.example)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+.env.test
+
+# =============================================================================
+# Khóa bảo mật / Certificates (QUAN TRỌNG - Không được commit!)
+# =============================================================================
+
+# RSA keys (private & public)
+configs/keys/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+
+# JWT secrets
+*.secret
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# =============================================================================
+# IDE & Editor
+# =============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains (GoLand, IntelliJ...)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*#
+.#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# OS
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# =============================================================================
+# Docker
+# =============================================================================
+
+# Override files (thường chứa secrets local)
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.*.local.yml
+
+# =============================================================================
+# Logs & Reports
+# =============================================================================
+
+*.log
+*.logs
+logs/
+.reports/
+/tmp/
+
+# =============================================================================
+# Build artifacts
+# =============================================================================
+
+# Thư mục build output
+/bin/
+/dist/
+/out/
+/build/
+
+# Binary cụ thể của service
+services/auth/auth
+services/gateway/gateway
+
+# =============================================================================
+# Database & Migration tools
+# =============================================================================
+
+# Migrate CLI (nếu download vào project)
+migrate
+
+# Dump files
+*.sql.gz
+*.dump
+
+# =============================================================================
+# Testing & Benchmarks
+# =============================================================================
+
+# Benchmark results
+benchmark-*.txt
+*.bench
+
+# Mock generated files (nếu tự generate)
+# mocks/
+
+# =============================================================================
+# Agent & AI Tools
+# =============================================================================
+
+# Everything Claude Code agent data (không commit tool nội bộ)
+# .agent/ được commit vì chứa skills, workflows dùng chung
+# Nhưng ignore các file tạm của agent:
+.agent/tmp/
+.agent/cache/
+.agent/.session/
+
+# =============================================================================
+# Python (dùng trong .agent/skills scripts)
+# =============================================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+# Air (hot reload tool cho Go)
+tmp/
+.air.toml.bak
+
+# Delve debugger
+__debug_bin
+__debug_bin*

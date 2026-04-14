@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Agent
+.agent
+.agents
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test
+*_test.go
+coverage.out
+
+# Keys (mount qua volume, không copy vào image)
+configs/keys/
+
+# Docker
+docker-compose.yml
+Dockerfile

@@ -1,0 +1,26 @@
+# ========================================
+# Gateway Route Configuration
+# ========================================
+# Mỗi route định nghĩa cách Gateway proxy request tới downstream service.
+#
+# Các field:
+#   prefix:        Path prefix để match request (dài nhất match trước).
+#   target:        URL của downstream service.
+#   strip_prefix:  Xoá prefix trước khi forward (default: false).
+#   requires_auth: Yêu cầu JWT access token hợp lệ (default: false).
+#   methods:       Giới hạn HTTP methods (rỗng = tất cả).
+
+routes:
+  # Auth Service — public endpoints (register, login, refresh, validate)
+  - prefix: /api/v1/auth
+    target: http://localhost:8081
+    strip_prefix: false
+    requires_auth: false
+
+  # Thêm route mới cho các service khác ở đây.
+  # Ví dụ:
+  # - prefix: /api/v1/products
+  #   target: http://localhost:8082
+  #   strip_prefix: false
+  #   requires_auth: true
+  #   methods: [GET, POST, PUT, DELETE]
