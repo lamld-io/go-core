@@ -14,6 +14,18 @@ type RefreshToken struct {
 	ExpiresAt time.Time
 	Revoked   bool
 	CreatedAt time.Time
+
+	// Metadata
+	IP        string
+	UserAgent string
+	DeviceID  string
+}
+
+// ClientMetadata chứa thông tin thiết bị và phiên đăng nhập.
+type ClientMetadata struct {
+	IP        string
+	UserAgent string
+	DeviceID  string
 }
 
 // IsExpired kiểm tra token đã hết hạn chưa.

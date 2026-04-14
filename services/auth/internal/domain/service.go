@@ -20,7 +20,7 @@ type AuthService interface {
 	Register(ctx context.Context, email, password, fullName string) (*User, error)
 
 	// Login xác thực và trả về token pair.
-	Login(ctx context.Context, email, password string) (*User, *TokenPair, error)
+	Login(ctx context.Context, email, password string, meta ClientMetadata) (*User, *TokenPair, error)
 
 	// VerifyEmail xác thực email bằng token một lần.
 	VerifyEmail(ctx context.Context, token string) error
@@ -35,7 +35,7 @@ type AuthService interface {
 	ResetPassword(ctx context.Context, token, newPassword string) error
 
 	// RefreshToken làm mới access token từ refresh token.
-	RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error)
+	RefreshToken(ctx context.Context, refreshToken string, meta ClientMetadata) (*TokenPair, error)
 
 	// Logout thu hồi refresh token.
 	Logout(ctx context.Context, userID uuid.UUID) error
