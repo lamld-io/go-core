@@ -7,10 +7,12 @@ import (
 	pkgmiddleware "github.com/base-go/base/pkg/middleware"
 	"github.com/base-go/base/services/auth/internal/delivery/http/handler"
 	"github.com/base-go/base/services/auth/internal/delivery/http/middleware"
+	"github.com/base-go/base/services/auth/internal/platform/config"
+	"github.com/redis/go-redis/v9"
 )
 
 // NewRouter tạo Gin engine với tất cả route cho Auth Service.
-func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager) *gin.Engine {
+func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, redisClient *redis.Client, cfg *config.Config) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -28,13 +30,17 @@ func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager) *gi
 		auth := v1.Group("/auth")
 		{
 			// Public endpoints — không cần JWT
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/verify-email", authHandler.VerifyEmail)
-			auth.POST("/resend-verification-email", authHandler.ResendVerificationEmail)
-			auth.POST("/forgot-password", authHandler.ForgotPassword)
-			auth.POST("/reset-password", authHandler.ResetPassword)
-			auth.POST("/refresh", authHandler.RefreshToken)
+			public := auth.Group("")
+			public.Use(pkgmiddleware.IPRateLimiter(redisClient, cfg.RateLimit.LoginLimit))
+			{
+				public.POST("/register", authHandler.Register)
+				public.POST("/login", authHandler.Login)
+				public.POST("/verify-email", authHandler.VerifyEmail)
+				public.POST("/resend-verification-email", authHandler.ResendVerificationEmail)
+				public.POST("/forgot-password", authHandler.ForgotPassword)
+				public.POST("/reset-password", authHandler.ResetPassword)
+				public.POST("/refresh", authHandler.RefreshToken)
+			}
 
 			// Internal endpoint — dùng cho Gateway hoặc service khác validate token
 			auth.GET("/validate", authHandler.ValidateToken)

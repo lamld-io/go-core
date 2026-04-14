@@ -9,12 +9,14 @@ import (
 
 // Config chứa toàn bộ cấu hình cho Auth Service.
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Password PasswordPolicy
-	Security SecurityConfig
-	Email    EmailConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
+	Redis     RedisConfig
+	RateLimit RateLimitConfig
+	JWT       JWTConfig
+	Password  PasswordPolicy
+	Security  SecurityConfig
+	Email     EmailConfig
 }
 
 // ServerConfig cấu hình HTTP server.
@@ -40,6 +42,20 @@ func (d DatabaseConfig) DSN() string {
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		d.Host, d.Port, d.User, d.Password, d.DBName, d.SSLMode,
 	)
+}
+
+// RedisConfig cấu hình kết nối Redis.
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
+// RateLimitConfig cấu hình cho Rate Limiter
+type RateLimitConfig struct {
+	LoginLimit   int
+	GeneralLimit int
 }
 
 // JWTConfig cấu hình JWT.
@@ -98,6 +114,16 @@ func Load() (*Config, error) {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			DBName:   getEnv("DB_NAME", "auth_db"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getIntEnv("REDIS_DB", 0),
+		},
+		RateLimit: RateLimitConfig{
+			LoginLimit:   getIntEnv("RATE_LIMIT_LOGIN", 5),
+			GeneralLimit: getIntEnv("RATE_LIMIT_GENERAL", 100),
 		},
 		JWT: JWTConfig{
 			PrivateKeyPath:  getEnv("JWT_PRIVATE_KEY_PATH", "configs/keys/private.pem"),
