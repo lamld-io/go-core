@@ -13,14 +13,22 @@ type TokenPair struct {
 	RefreshToken string
 }
 
+// LoginResult chứa kết quả của quá trình đăng nhập (có thể là TokenPair hoặc yêu cầu 2FA).
+type LoginResult struct {
+	User        *User
+	TokenPair   *TokenPair
+	Requires2FA bool
+	TempToken   string
+}
+
 // AuthService định nghĩa interface cho các use case xác thực.
 // Tầng delivery gọi interface này, tầng usecase implement.
 type AuthService interface {
 	// Register đăng ký tài khoản mới.
 	Register(ctx context.Context, email, password, fullName string) (*User, error)
 
-	// Login xác thực và trả về token pair.
-	Login(ctx context.Context, email, password string, meta ClientMetadata) (*User, *TokenPair, error)
+	// Login xác thực và trả về LoginResult (có thể bao gồm bước yêu cầu 2FA).
+	Login(ctx context.Context, email, password string, meta ClientMetadata) (*LoginResult, error)
 
 	// VerifyEmail xác thực email bằng token một lần.
 	VerifyEmail(ctx context.Context, token string) error
@@ -63,6 +71,9 @@ type AuthService interface {
 
 	// Verify2FASetup xác thực mã OTP để bật 2FA.
 	Verify2FASetup(ctx context.Context, userID uuid.UUID, code string) error
+
+	// Verify2FALogin xác thực mã OTP trong quá trình đăng nhập.
+	Verify2FALogin(ctx context.Context, tempToken, code string, meta ClientMetadata) (*LoginResult, error)
 }
 
 // Setup2FAResponse trả về thông tin cấu hình 2FA (Secret, URL)

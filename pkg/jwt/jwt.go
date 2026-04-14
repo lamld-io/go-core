@@ -14,11 +14,11 @@ import (
 
 // Manager quản lý việc phát hành và xác thực JWT bằng RSA.
 type Manager struct {
-	privateKey       *rsa.PrivateKey
-	publicKey        *rsa.PublicKey
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
-	issuer           string
+	privateKey      *rsa.PrivateKey
+	publicKey       *rsa.PublicKey
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
+	issuer          string
 }
 
 // Config chứa cấu hình cho JWT Manager.
@@ -108,6 +108,31 @@ func (m *Manager) GenerateRefreshToken(userID, email, role string) (string, erro
 		Email:     email,
 		Role:      role,
 		TokenType: RefreshToken,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return token.SignedString(m.privateKey)
+}
+
+// GenerateTemp2FAToken phát hành token tạm thời cho bước xác thực 2FA.
+func (m *Manager) GenerateTemp2FAToken(userID, email string) (string, error) {
+	if m.privateKey == nil {
+		return "", fmt.Errorf("private key not available, cannot sign tokens")
+	}
+
+	now := time.Now()
+	claims := Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
+			Issuer:    m.issuer,
+			Subject:   userID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(2 * time.Minute)), // Hạn mặc định 2 phút cho 2FA
+		},
+		UserID:    userID,
+		Email:     email,
+		Role:      "",
+		TokenType: Temp2FAToken,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

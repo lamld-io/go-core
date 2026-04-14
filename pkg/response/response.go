@@ -29,6 +29,11 @@ func OK(c *gin.Context, data interface{}) {
 	Success(c, http.StatusOK, data)
 }
 
+// Accepted trả về 202 với data.
+func Accepted(c *gin.Context, data interface{}) {
+	Success(c, http.StatusAccepted, data)
+}
+
 // Created trả về 201 với data.
 func Created(c *gin.Context, data interface{}) {
 	Success(c, http.StatusCreated, data)

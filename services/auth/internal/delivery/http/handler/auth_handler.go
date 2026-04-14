@@ -56,13 +56,36 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	meta := h.getClientMeta(c)
-	user, tokenPair, err := h.authService.Login(c.Request.Context(), req.Email, req.Password, meta)
+	loginResult, err := h.authService.Login(c.Request.Context(), req.Email, req.Password, meta)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.OK(c, presenter.ToAuthResponse(user, tokenPair, h.accessTokenTTL))
+	if loginResult.Requires2FA {
+		response.Accepted(c, presenter.ToLoginResponse(loginResult, h.accessTokenTTL))
+		return
+	}
+
+	response.OK(c, presenter.ToLoginResponse(loginResult, h.accessTokenTTL))
+}
+
+// Login2FA xử lý POST /api/v1/auth/login/2fa.
+func (h *AuthHandler) Login2FA(c *gin.Context) {
+	var req dto.Login2FARequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperror.ValidationError(err.Error()))
+		return
+	}
+
+	meta := h.getClientMeta(c)
+	loginResult, err := h.authService.Verify2FALogin(c.Request.Context(), req.TempToken, req.Code, meta)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, presenter.ToLoginResponse(loginResult, h.accessTokenTTL))
 }
 
 // VerifyEmail xử lý POST /api/v1/auth/verify-email.

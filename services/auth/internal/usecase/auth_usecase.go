@@ -105,47 +105,60 @@ func (uc *authUsecase) Register(ctx context.Context, email, password, fullName s
 	return user, nil
 }
 
-func (uc *authUsecase) Login(ctx context.Context, email, password string, meta domain.ClientMetadata) (*domain.User, *domain.TokenPair, error) {
+func (uc *authUsecase) Login(ctx context.Context, email, password string, meta domain.ClientMetadata) (*domain.LoginResult, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	user, err := uc.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		var appErr *apperror.AppError
 		if errors.As(err, &appErr) && appErr.Code == apperror.CodeNotFound {
-			return nil, nil, domain.ErrInvalidCredentials
+			return nil, domain.ErrInvalidCredentials
 		}
-		return nil, nil, err
+		return nil, err
 	}
 
 	if !user.IsActive {
-		return nil, nil, domain.ErrUserInactive
+		return nil, domain.ErrUserInactive
 	}
 
 	if !user.EmailVerified {
-		return nil, nil, domain.ErrEmailNotVerified
+		return nil, domain.ErrEmailNotVerified
 	}
 
 	now := uc.now()
 	if user.IsLocked(now) {
-		return nil, nil, domain.NewAccountLockedError(*user.LockedUntil)
+		return nil, domain.NewAccountLockedError(*user.LockedUntil)
 	}
 
 	if user.LockedUntil != nil {
 		if err := uc.clearExpiredLockoutState(ctx, user, now); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return nil, nil, uc.handleFailedLogin(ctx, user)
+		return nil, uc.handleFailedLogin(ctx, user)
 	}
 
 	if user.FailedLoginAttempts > 0 || user.LockedUntil != nil {
 		user.FailedLoginAttempts = 0
 		user.LockedUntil = nil
 		if err := uc.userRepo.Update(ctx, user); err != nil {
-			return nil, nil, apperror.InternalError("failed to reset login failure state", err)
+			return nil, apperror.InternalError("failed to reset login failure state", err)
 		}
+	}
+
+	if user.Is2FAEnabled {
+		tempToken, err := uc.jwtManager.GenerateTemp2FAToken(user.ID.String(), user.Email)
+		if err != nil {
+			return nil, apperror.InternalError("failed to generate 2FA token", err)
+		}
+		slog.InfoContext(ctx, "user requires 2FA login", "user_id", user.ID)
+		return &domain.LoginResult{
+			User:        user,
+			Requires2FA: true,
+			TempToken:   tempToken,
+		}, nil
 	}
 
 	if err := uc.tokenRepo.RevokeByUserID(ctx, user.ID); err != nil {
@@ -154,11 +167,78 @@ func (uc *authUsecase) Login(ctx context.Context, email, password string, meta d
 
 	tokenPair, err := uc.generateTokenPair(ctx, user, meta)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	slog.InfoContext(ctx, "user logged in", "user_id", user.ID)
-	return user, tokenPair, nil
+	return &domain.LoginResult{
+		User:      user,
+		TokenPair: tokenPair,
+	}, nil
+}
+
+func (uc *authUsecase) Verify2FALogin(ctx context.Context, tempToken, code string, meta domain.ClientMetadata) (*domain.LoginResult, error) {
+	claims, err := uc.jwtManager.ValidateToken(tempToken)
+	if err != nil || claims.TokenType != pkgjwt.Temp2FAToken {
+		return nil, apperror.Unauthorized("invalid or expired 2FA token")
+	}
+
+	userID, err := uuid.Parse(claims.UserID)
+	if err != nil {
+		return nil, apperror.Unauthorized("invalid token user info")
+	}
+
+	user, err := uc.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, apperror.Unauthorized("user not found")
+	}
+
+	if !user.IsActive || !user.Is2FAEnabled || user.TOTPSecret == nil {
+		return nil, apperror.Unauthorized("invalid 2FA state")
+	}
+
+	now := uc.now()
+	if user.IsLocked(now) {
+		return nil, domain.NewAccountLockedError(*user.LockedUntil)
+	}
+
+	valid := totp.Validate(code, *user.TOTPSecret)
+	if !valid {
+		// Increment failed attempts as it's a security barrier
+		user.FailedLoginAttempts++
+		if policy, err := uc.GetLoginLockoutPolicy(ctx); err == nil {
+			if user.FailedLoginAttempts >= policy.MaxFailedAttempts {
+				lockTime := now.Add(policy.LockDuration)
+				user.LockedUntil = &lockTime
+			}
+		}
+		_ = uc.userRepo.Update(ctx, user)
+		if user.LockedUntil != nil {
+			return nil, domain.NewAccountLockedError(*user.LockedUntil)
+		}
+		return nil, apperror.Unauthorized("invalid 2FA code")
+	}
+
+	if user.FailedLoginAttempts > 0 || user.LockedUntil != nil {
+		user.FailedLoginAttempts = 0
+		user.LockedUntil = nil
+		_ = uc.userRepo.Update(ctx, user)
+	}
+
+	if err := uc.tokenRepo.RevokeByUserID(ctx, user.ID); err != nil {
+		slog.WarnContext(ctx, "failed to revoke old tokens on 2fa login", "error", err, "user_id", user.ID)
+	}
+
+	tokenPair, err := uc.generateTokenPair(ctx, user, meta)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "user logged in via 2FA", "user_id", user.ID)
+	return &domain.LoginResult{
+		User:      user,
+		TokenPair: tokenPair,
+	}, nil
 }
 
 func (uc *authUsecase) VerifyEmail(ctx context.Context, token string) error {

@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 
-	"github.com/base-go/base/pkg/response"
 	"github.com/base-go/base/pkg/apperror"
+	"github.com/base-go/base/pkg/response"
 )
 
 // RateLimitConfig cấu hình rate limiter.

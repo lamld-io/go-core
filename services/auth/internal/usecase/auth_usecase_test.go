@@ -392,7 +392,7 @@ func TestRegisterRequiresEmailVerification(t *testing.T) {
 	assert.False(t, user.EmailVerified)
 	assert.NotEmpty(t, emailSender.VerificationToken("user@example.com"))
 
-	_, _, err = svc.Login(ctx, "user@example.com", "password123", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "user@example.com", "password123", domain.ClientMetadata{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not verified")
 }
@@ -408,8 +408,10 @@ func TestVerifyEmailThenLogin(t *testing.T) {
 	require.NotEmpty(t, token)
 	require.NoError(t, svc.VerifyEmail(ctx, token))
 
-	user, tokenPair, err := svc.Login(ctx, "verify@example.com", "password123", domain.ClientMetadata{})
+	res, err := svc.Login(ctx, "verify@example.com", "password123", domain.ClientMetadata{})
 	require.NoError(t, err)
+	user := res.User
+	tokenPair := res.TokenPair
 	assert.Equal(t, "verify@example.com", user.Email)
 	assert.True(t, user.EmailVerified)
 	assert.NotEmpty(t, tokenPair.AccessToken)
@@ -424,7 +426,8 @@ func TestForgotAndResetPassword(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, svc.VerifyEmail(ctx, emailSender.VerificationToken("reset@example.com")))
 
-	_, oldTokenPair, err := svc.Login(ctx, "reset@example.com", "password123", domain.ClientMetadata{})
+	res, err := svc.Login(ctx, "reset@example.com", "password123", domain.ClientMetadata{})
+	oldTokenPair := res.TokenPair
 	require.NoError(t, err)
 
 	require.NoError(t, svc.ForgotPassword(ctx, "reset@example.com"))
@@ -432,11 +435,11 @@ func TestForgotAndResetPassword(t *testing.T) {
 	require.NotEmpty(t, resetToken)
 	require.NoError(t, svc.ResetPassword(ctx, resetToken, "newpassword123"))
 
-	_, _, err = svc.Login(ctx, "reset@example.com", "password123", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "reset@example.com", "password123", domain.ClientMetadata{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid email or password")
 
-	_, _, err = svc.Login(ctx, "reset@example.com", "newpassword123", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "reset@example.com", "newpassword123", domain.ClientMetadata{})
 	require.NoError(t, err)
 
 	_, err = svc.RefreshToken(ctx, oldTokenPair.RefreshToken, domain.ClientMetadata{})
@@ -454,11 +457,11 @@ func TestLoginLockoutPolicyIsRuntimeConfigurable(t *testing.T) {
 	_, err = svc.UpdateLoginLockoutPolicy(ctx, 2, 10*time.Minute)
 	require.NoError(t, err)
 
-	_, _, err = svc.Login(ctx, "lock@example.com", "wrong-password", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "lock@example.com", "wrong-password", domain.ClientMetadata{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid email or password")
 
-	_, _, err = svc.Login(ctx, "lock@example.com", "wrong-password", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "lock@example.com", "wrong-password", domain.ClientMetadata{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "account is locked until")
 
@@ -466,7 +469,7 @@ func TestLoginLockoutPolicyIsRuntimeConfigurable(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, user.LockedUntil)
 
-	_, _, err = svc.Login(ctx, "lock@example.com", "password123", domain.ClientMetadata{})
+	_, err = svc.Login(ctx, "lock@example.com", "password123", domain.ClientMetadata{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "account is locked until")
 
