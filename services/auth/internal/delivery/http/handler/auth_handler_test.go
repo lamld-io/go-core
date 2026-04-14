@@ -303,6 +303,29 @@ func (m *mockEmailSender) resetToken(email string) string {
 	return m.resetTokens[email]
 }
 
+type mockTokenBlacklist struct {
+	mu        sync.RWMutex
+	blacklist map[string]time.Time
+}
+
+func newMockTokenBlacklist() *mockTokenBlacklist {
+	return &mockTokenBlacklist{blacklist: make(map[string]time.Time)}
+}
+
+func (m *mockTokenBlacklist) BlacklistToken(_ context.Context, tokenID string, expiresAt time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.blacklist[tokenID] = expiresAt
+	return nil
+}
+
+func (m *mockTokenBlacklist) IsBlacklisted(_ context.Context, tokenID string) (bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.blacklist[tokenID]
+	return ok, nil
+}
+
 func setupTestRouter(t *testing.T) (*httptest.Server, *mockUserRepo, *mockEmailSender) {
 	t.Helper()
 
@@ -335,6 +358,7 @@ func setupTestRouter(t *testing.T) (*httptest.Server, *mockUserRepo, *mockEmailS
 	actionTokenRepo := newMockActionTokenRepo()
 	lockoutPolicyRepo := newMockLockoutPolicyRepo()
 	emailSender := newMockEmailSender()
+	tokenBlacklist := newMockTokenBlacklist()
 
 	authService := usecase.NewAuthUsecase(
 		userRepo,
@@ -343,6 +367,7 @@ func setupTestRouter(t *testing.T) (*httptest.Server, *mockUserRepo, *mockEmailS
 		lockoutPolicyRepo,
 		emailSender,
 		jwtManager,
+		tokenBlacklist,
 		config.PasswordPolicy{MinLength: 8},
 		config.SecurityConfig{
 			EmailVerificationTokenTTL: time.Hour,
@@ -356,7 +381,7 @@ func setupTestRouter(t *testing.T) (*httptest.Server, *mockUserRepo, *mockEmailS
 
 	authHandler := handler.NewAuthHandler(authService, 900)
 	cfg := &config.Config{RateLimit: config.RateLimitConfig{LoginLimit: 1000000}}
-	router := deliveryhttp.NewRouter(authHandler, jwtManager, nil, cfg)
+	router := deliveryhttp.NewRouter(authHandler, jwtManager, nil, tokenBlacklist, cfg)
 	ts := httptest.NewServer(router)
 	t.Cleanup(ts.Close)
 

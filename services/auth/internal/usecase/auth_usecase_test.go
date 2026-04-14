@@ -289,6 +289,30 @@ func (m *mockEmailSender) ResetToken(email string) string {
 	return m.resetTokens[email]
 }
 
+type mockTokenBlacklist struct {
+	mu        sync.RWMutex
+	blacklist map[string]time.Time
+}
+
+func newMockTokenBlacklist() *mockTokenBlacklist {
+	return &mockTokenBlacklist{blacklist: make(map[string]time.Time)}
+}
+
+func (m *mockTokenBlacklist) BlacklistToken(_ context.Context, tokenID string, expiresAt time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.blacklist[tokenID] = expiresAt
+	return nil
+}
+
+func (m *mockTokenBlacklist) IsBlacklisted(_ context.Context, tokenID string) (bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.blacklist[tokenID]
+	// Có thể thêm check time.Now().After(expiresAt)
+	return ok, nil
+}
+
 func setupTestUsecase(t *testing.T) (domain.AuthService, *mockUserRepo, *mockTokenRepo, *mockActionTokenRepo, *mockLockoutPolicyRepo, *mockEmailSender) {
 	t.Helper()
 
@@ -321,6 +345,7 @@ func setupTestUsecase(t *testing.T) (domain.AuthService, *mockUserRepo, *mockTok
 	actionTokenRepo := newMockActionTokenRepo()
 	lockoutPolicyRepo := newMockLockoutPolicyRepo()
 	emailSender := newMockEmailSender()
+	tokenBlacklist := newMockTokenBlacklist()
 
 	svc := usecase.NewAuthUsecase(
 		userRepo,
@@ -329,6 +354,7 @@ func setupTestUsecase(t *testing.T) (domain.AuthService, *mockUserRepo, *mockTok
 		lockoutPolicyRepo,
 		emailSender,
 		jwtManager,
+		tokenBlacklist,
 		config.PasswordPolicy{MinLength: 8},
 		config.SecurityConfig{
 			EmailVerificationTokenTTL: time.Hour,

@@ -37,8 +37,8 @@ type AuthService interface {
 	// RefreshToken làm mới access token từ refresh token.
 	RefreshToken(ctx context.Context, refreshToken string, meta ClientMetadata) (*TokenPair, error)
 
-	// Logout thu hồi refresh token.
-	Logout(ctx context.Context, userID uuid.UUID) error
+	// Logout thu hồi refresh token và đưa access token vào danh sách đen.
+	Logout(ctx context.Context, userID uuid.UUID, accessTokenStr string) error
 
 	// GetProfile lấy thông tin user hiện tại.
 	GetProfile(ctx context.Context, userID uuid.UUID) (*User, error)
@@ -51,4 +51,10 @@ type AuthService interface {
 
 	// UpdateLoginLockoutPolicy cập nhật policy khoá tài khoản.
 	UpdateLoginLockoutPolicy(ctx context.Context, maxFailedAttempts int, lockDuration time.Duration) (*LoginLockoutPolicy, error)
+}
+
+// TokenBlacklist lưu trữ danh sách các access token bị vô hiệu hóa trước hạn.
+type TokenBlacklist interface {
+	BlacklistToken(ctx context.Context, tokenID string, expiresAt time.Time) error
+	IsBlacklisted(ctx context.Context, tokenID string) (bool, error)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/base-go/base/pkg/apperror"
 	pkgjwt "github.com/base-go/base/pkg/jwt"
 	"github.com/base-go/base/pkg/response"
+	"github.com/base-go/base/services/auth/internal/domain"
 )
 
 const (
@@ -25,7 +26,7 @@ const (
 )
 
 // AuthMiddleware xác thực JWT access token và inject user info vào context.
-func AuthMiddleware(jwtManager *pkgjwt.Manager) gin.HandlerFunc {
+func AuthMiddleware(jwtManager *pkgjwt.Manager, blacklist domain.TokenBlacklist) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Lấy token từ Authorization header.
 		authHeader := c.GetHeader(AuthorizationHeader)
@@ -49,6 +50,12 @@ func AuthMiddleware(jwtManager *pkgjwt.Manager) gin.HandlerFunc {
 		claims, err := jwtManager.ValidateToken(tokenString)
 		if err != nil {
 			response.AbortWithError(c, apperror.TokenInvalid())
+			return
+		}
+
+		// Kiểm tra danh sách đen.
+		if isBlacklisted, _ := blacklist.IsBlacklisted(c.Request.Context(), claims.ID); isBlacklisted {
+			response.AbortWithError(c, apperror.Unauthorized("token has been revoked"))
 			return
 		}
 
