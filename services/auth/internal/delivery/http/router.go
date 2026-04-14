@@ -54,6 +54,11 @@ func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, red
 				protected.GET("/profile", authHandler.GetProfile)
 				protected.GET("/sessions", authHandler.GetSessions)
 				protected.DELETE("/sessions/:id", authHandler.DeleteSession)
+				
+				// 2FA Management
+				protected.POST("/2fa/setup", authHandler.Setup2FA)
+				protected.POST("/2fa/verify", authHandler.Verify2FASetup)
+
 				protected.GET("/security/lockout-policy", authHandler.GetLoginLockoutPolicy)
 				protected.PUT("/security/lockout-policy", authHandler.UpdateLoginLockoutPolicy)
 			}

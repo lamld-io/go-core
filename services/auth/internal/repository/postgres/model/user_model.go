@@ -19,6 +19,8 @@ type UserModel struct {
 	IsActive            bool           `gorm:"not null;default:true"`
 	FailedLoginAttempts int            `gorm:"not null;default:0"`
 	LockedUntil         *time.Time     `gorm:"type:timestamptz"`
+	TOTPSecret          *string        `gorm:"type:varchar(255)"`
+	Is2FAEnabled        bool           `gorm:"not null;default:false"`
 	CreatedAt           time.Time      `gorm:"not null;autoCreateTime"`
 	UpdatedAt           time.Time      `gorm:"not null;autoUpdateTime"`
 	DeletedAt           gorm.DeletedAt `gorm:"index"`

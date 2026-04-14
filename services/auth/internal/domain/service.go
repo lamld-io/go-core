@@ -57,6 +57,18 @@ type AuthService interface {
 
 	// UpdateLoginLockoutPolicy cập nhật policy khoá tài khoản.
 	UpdateLoginLockoutPolicy(ctx context.Context, maxFailedAttempts int, lockDuration time.Duration) (*LoginLockoutPolicy, error)
+
+	// Setup2FA khởi tạo TOTP 2FA.
+	Setup2FA(ctx context.Context, userID uuid.UUID) (*Setup2FAResponse, error)
+
+	// Verify2FASetup xác thực mã OTP để bật 2FA.
+	Verify2FASetup(ctx context.Context, userID uuid.UUID, code string) error
+}
+
+// Setup2FAResponse trả về thông tin cấu hình 2FA (Secret, URL)
+type Setup2FAResponse struct {
+	Secret    string
+	SecretURL string
 }
 
 // TokenBlacklist lưu trữ danh sách các access token bị vô hiệu hóa trước hạn.

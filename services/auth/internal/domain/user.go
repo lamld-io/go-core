@@ -17,6 +17,8 @@ type User struct {
 	IsActive            bool
 	FailedLoginAttempts int
 	LockedUntil         *time.Time
+	TOTPSecret          *string
+	Is2FAEnabled        bool
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
