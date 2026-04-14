@@ -62,15 +62,6 @@ func NewPostgresDB(cfg Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-// Close đóng kết nối database.
-func Close(db *gorm.DB) error {
-	sqlDB, err := db.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
-}
-
 // maskDSN ẩn password trong DSN để log an toàn.
 func maskDSN(dsn string) string {
 	// Chỉ log host, không log password.
