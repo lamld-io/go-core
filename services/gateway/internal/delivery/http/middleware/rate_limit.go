@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"net/http"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -71,21 +70,6 @@ func RateLimit(cfg RateLimitConfig) gin.HandlerFunc {
 			return
 		}
 
-		c.Next()
-	}
-}
-
-// GlobalRateLimit tạo middleware rate limiting global (không phân biệt IP).
-// Dùng cho bảo vệ tổng tải trên server.
-func GlobalRateLimit(rps float64, burst int) gin.HandlerFunc {
-	limiter := rate.NewLimiter(rate.Limit(rps), burst)
-
-	return func(c *gin.Context) {
-		if !limiter.Allow() {
-			c.Header("Retry-After", "1")
-			c.AbortWithStatus(http.StatusTooManyRequests)
-			return
-		}
 		c.Next()
 	}
 }

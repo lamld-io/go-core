@@ -107,8 +107,3 @@ func RateLimited() *AppError {
 func ServiceUnavailable(msg string) *AppError {
 	return &AppError{Code: CodeServiceUnavail, Message: msg}
 }
-
-// Wrap bọc lỗi gốc vào AppError.
-func Wrap(code Code, msg string, err error) *AppError {
-	return &AppError{Code: code, Message: msg, Err: err}
-}

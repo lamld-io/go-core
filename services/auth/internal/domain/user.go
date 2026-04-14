@@ -36,18 +36,3 @@ const (
 	RoleAdmin = "admin"
 	RoleUser  = "user"
 )
-
-// ValidRoles trả về danh sách role hợp lệ.
-func ValidRoles() []string {
-	return []string{RoleAdmin, RoleUser}
-}
-
-// IsValidRole kiểm tra role có hợp lệ không.
-func IsValidRole(role string) bool {
-	for _, r := range ValidRoles() {
-		if r == role {
-			return true
-		}
-	}
-	return false
-}

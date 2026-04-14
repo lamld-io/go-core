@@ -20,19 +20,6 @@ func UserToResponse(user *domain.User) dto.UserResponse {
 	}
 }
 
-// ToAuthResponse kết hợp user + token pair → dto.AuthResponse.
-func ToAuthResponse(user *domain.User, tokenPair *domain.TokenPair, expiresInSec int64) dto.AuthResponse {
-	return dto.AuthResponse{
-		User: UserToResponse(user),
-		Token: dto.TokenResponse{
-			AccessToken:  tokenPair.AccessToken,
-			RefreshToken: tokenPair.RefreshToken,
-			TokenType:    "Bearer",
-			ExpiresIn:    expiresInSec,
-		},
-	}
-}
-
 // ToLoginResponse chuyển đổi LoginResult thành dto.LoginResponse.
 func ToLoginResponse(result *domain.LoginResult, expiresInSec int64) dto.LoginResponse {
 	if result.Requires2FA {

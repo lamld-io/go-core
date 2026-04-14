@@ -115,7 +115,7 @@ Người dùng ẩn danh (Guest) - Các tính năng 2FA và Session Management k
 | 3 | Access Blacklist | Cơ chế Revoke Token và Middleware check Blacklist | complete | with 4 | 2 | .claude/PRPs/reports/access-blacklist-report.md |
 | 4 | Session UI API | Các API Get / Delete Session cho Client Apps | complete | with 3 | 2 | .claude/PRPs/reports/session-ui-api-report.md |
 | 5 | TOTP 2FA Core | Tích hợp thư viện OTP, API Enable/Verify 2FA | complete | - | 1, 2 | .claude/PRPs/reports/totp-2fa-core-report.md |
-| 6 | 2FA Login Flow | Tái cấu trúc hàm AuthUsecase.Login hỗ trợ luồng 2 bước | in-progress | - | 5 | .claude/PRPs/plans/2fa-login-flow.plan.md |
+| 6 | 2FA Login Flow | Tái cấu trúc hàm AuthUsecase.Login hỗ trợ luồng 2 bước | complete | - | 5 | .claude/PRPs/reports/2fa-login-flow-report.md |
 
 ### Phase Details
 
