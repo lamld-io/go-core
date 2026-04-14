@@ -372,3 +372,54 @@ func (h *AuthHandler) getClientMeta(c *gin.Context) domain.ClientMetadata {
 		DeviceID:  deviceID,
 	}
 }
+
+// Setup2FA xử lý POST /api/v1/auth/2fa/setup.
+func (h *AuthHandler) Setup2FA(c *gin.Context) {
+	userIDStr, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		response.Error(c, apperror.Unauthorized("user ID not found in context"))
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Error(c, apperror.Unauthorized("invalid user ID"))
+		return
+	}
+
+	resp, err := h.authService.Setup2FA(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, resp)
+}
+
+// Verify2FASetup xử lý POST /api/v1/auth/2fa/verify.
+func (h *AuthHandler) Verify2FASetup(c *gin.Context) {
+	userIDStr, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		response.Error(c, apperror.Unauthorized("user ID not found in context"))
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Error(c, apperror.Unauthorized("invalid user ID"))
+		return
+	}
+
+	var req dto.Verify2FARequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperror.ValidationError(err.Error()))
+		return
+	}
+
+	if err := h.authService.Verify2FASetup(c.Request.Context(), userID, req.Code); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, dto.MessageResponse{Message: "2FA successfully enabled"})
+}

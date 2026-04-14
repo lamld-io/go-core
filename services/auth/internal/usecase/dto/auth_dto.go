@@ -116,3 +116,14 @@ type SessionResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
+
+// Setup2FAResponse trả về thông tin secret để hiển thị QR code.
+type Setup2FAResponse struct {
+	Secret    string `json:"secret"`
+	SecretURL string `json:"secret_url"`
+}
+
+// Verify2FARequest nhận OTP code để bật 2FA.
+type Verify2FARequest struct {
+	Code string `json:"code" binding:"required"`
+}

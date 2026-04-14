@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/base-go/base/pkg/apperror"
@@ -660,4 +661,69 @@ func containsFunc(s string, f func(rune) bool) bool {
 		}
 	}
 	return false
+}
+
+// Setup2FA tạo TOTP secret cho user nếu chưa bật 2FA.
+func (uc *authUsecase) Setup2FA(ctx context.Context, userID uuid.UUID) (*domain.Setup2FAResponse, error) {
+	user, err := uc.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("userRepo.GetByID: %w", err)
+	}
+
+	if user.Is2FAEnabled {
+		return nil, apperror.ValidationError("2FA is already enabled")
+	}
+
+	// Tạo TOTP secret
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "lamld-io",
+		AccountName: user.Email,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("totp.Generate: %w", err)
+	}
+
+	secret := key.Secret()
+	user.TOTPSecret = &secret
+
+	// Cập nhật lại user (lưu secret nhưng chưa enable 2FA)
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("userRepo.Update: %w", err)
+	}
+
+	return &domain.Setup2FAResponse{
+		Secret:    key.Secret(),
+		SecretURL: key.URL(),
+	}, nil
+}
+
+// Verify2FASetup kiểm tra OTP hợp lệ và bặt cờ 2FA cho user.
+func (uc *authUsecase) Verify2FASetup(ctx context.Context, userID uuid.UUID, code string) error {
+	user, err := uc.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("userRepo.GetByID: %w", err)
+	}
+
+	if user.Is2FAEnabled {
+		return apperror.ValidationError("2FA is already enabled")
+	}
+
+	if user.TOTPSecret == nil {
+		return apperror.ValidationError("2FA setup has not been initialized")
+	}
+
+	// Xác thực mã OTP
+	valid := totp.Validate(code, *user.TOTPSecret)
+	if !valid {
+		return apperror.ValidationError("invalid OTP code")
+	}
+
+	// Kích hoạt 2FA
+	user.Is2FAEnabled = true
+
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return fmt.Errorf("userRepo.Update: %w", err)
+	}
+
+	return nil
 }

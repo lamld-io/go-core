@@ -17,6 +17,8 @@ func UserToModel(u *domain.User) *model.UserModel {
 		IsActive:            u.IsActive,
 		FailedLoginAttempts: u.FailedLoginAttempts,
 		LockedUntil:         u.LockedUntil,
+		TOTPSecret:          u.TOTPSecret,
+		Is2FAEnabled:        u.Is2FAEnabled,
 		CreatedAt:           u.CreatedAt,
 		UpdatedAt:           u.UpdatedAt,
 	}
@@ -34,6 +36,8 @@ func UserToDomain(m *model.UserModel) *domain.User {
 		IsActive:            m.IsActive,
 		FailedLoginAttempts: m.FailedLoginAttempts,
 		LockedUntil:         m.LockedUntil,
+		TOTPSecret:          m.TOTPSecret,
+		Is2FAEnabled:        m.Is2FAEnabled,
 		CreatedAt:           m.CreatedAt,
 		UpdatedAt:           m.UpdatedAt,
 	}
