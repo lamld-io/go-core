@@ -46,16 +46,16 @@ type RoutesFileConfig struct {
 
 // RateLimitConfig cấu hình rate limiting.
 type RateLimitConfig struct {
-	Enabled       bool
+	Enabled        bool
 	RequestsPerSec float64
-	BurstSize     int
+	BurstSize      int
 }
 
 // ProxyConfig cấu hình proxy behavior.
 type ProxyConfig struct {
-	Timeout          time.Duration
-	MaxIdleConns     int
-	IdleConnTimeout  time.Duration
+	Timeout         time.Duration
+	MaxIdleConns    int
+	IdleConnTimeout time.Duration
 }
 
 // Load đọc cấu hình từ biến môi trường.

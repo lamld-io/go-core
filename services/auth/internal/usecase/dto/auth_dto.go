@@ -127,3 +127,18 @@ type Setup2FAResponse struct {
 type Verify2FARequest struct {
 	Code string `json:"code" binding:"required"`
 }
+
+// LoginResponse là payload trả về khi gọi /login hoặc /login/2fa.
+type LoginResponse struct {
+	Requires2FA bool           `json:"requires_2fa"`
+	TempToken   string         `json:"temp_token,omitempty"`
+	Message     string         `json:"message,omitempty"`
+	User        *UserResponse  `json:"user,omitempty"`
+	Token       *TokenResponse `json:"token,omitempty"`
+}
+
+// Login2FARequest payload cho /login/2fa.
+type Login2FARequest struct {
+	TempToken string `json:"temp_token" binding:"required"`
+	Code      string `json:"code" binding:"required"`
+}

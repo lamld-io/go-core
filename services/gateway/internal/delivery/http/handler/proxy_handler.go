@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/base-go/base/pkg/response"
-	"github.com/base-go/base/services/gateway/internal/domain"
-	"github.com/base-go/base/services/gateway/internal/delivery/http/middleware"
 	pkgjwt "github.com/base-go/base/pkg/jwt"
+	"github.com/base-go/base/pkg/response"
+	"github.com/base-go/base/services/gateway/internal/delivery/http/middleware"
+	"github.com/base-go/base/services/gateway/internal/domain"
 )
 
 // ProxyHandler xử lý proxy request tới downstream service.

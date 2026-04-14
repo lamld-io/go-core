@@ -15,9 +15,9 @@ type TokenModel struct {
 	Revoked   bool      `gorm:"not null;default:false"`
 	CreatedAt time.Time `gorm:"not null;autoCreateTime"`
 
-	IP        string    `gorm:"type:varchar(64)"`
-	UserAgent string    `gorm:"type:varchar(512)"`
-	DeviceID  string    `gorm:"type:varchar(255)"`
+	IP        string `gorm:"type:varchar(64)"`
+	UserAgent string `gorm:"type:varchar(512)"`
+	DeviceID  string `gorm:"type:varchar(255)"`
 
 	// Foreign key relationship (chỉ dùng ở persistence layer).
 	User *UserModel `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`

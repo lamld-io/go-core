@@ -33,6 +33,29 @@ func ToAuthResponse(user *domain.User, tokenPair *domain.TokenPair, expiresInSec
 	}
 }
 
+// ToLoginResponse chuyển đổi LoginResult thành dto.LoginResponse.
+func ToLoginResponse(result *domain.LoginResult, expiresInSec int64) dto.LoginResponse {
+	if result.Requires2FA {
+		return dto.LoginResponse{
+			Requires2FA: true,
+			TempToken:   result.TempToken,
+			Message:     "2FA verification required",
+		}
+	}
+
+	userResp := UserToResponse(result.User)
+	return dto.LoginResponse{
+		Requires2FA: false,
+		User:        &userResp,
+		Token: &dto.TokenResponse{
+			AccessToken:  result.TokenPair.AccessToken,
+			RefreshToken: result.TokenPair.RefreshToken,
+			TokenType:    "Bearer",
+			ExpiresIn:    expiresInSec,
+		},
+	}
+}
+
 // ToRegisterResponse map user sang response đăng ký.
 func ToRegisterResponse(user *domain.User) dto.RegisterResponse {
 	return dto.RegisterResponse{

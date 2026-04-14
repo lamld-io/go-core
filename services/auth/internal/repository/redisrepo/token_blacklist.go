@@ -31,12 +31,12 @@ func (r *tokenBlacklist) BlacklistToken(ctx context.Context, tokenID string, exp
 	}
 
 	key := fmt.Sprintf("blacklist:token:%s", tokenID)
-	
+
 	if err := r.client.Set(ctx, key, "revoked", ttl).Err(); err != nil {
 		slog.ErrorContext(ctx, "failed to blacklist token", "error", err, "token_id", tokenID)
 		return err
 	}
-	
+
 	slog.DebugContext(ctx, "token added to blacklist", "token_id", tokenID, "ttl", ttl)
 	return nil
 }
@@ -49,7 +49,7 @@ func (r *tokenBlacklist) IsBlacklisted(ctx context.Context, tokenID string) (boo
 
 	key := fmt.Sprintf("blacklist:token:%s", tokenID)
 	err := r.client.Get(ctx, key).Err()
-	
+
 	if err == redis.Nil {
 		return false, nil // Not found = not blacklisted
 	} else if err != nil {

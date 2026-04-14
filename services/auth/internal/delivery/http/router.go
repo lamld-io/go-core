@@ -36,6 +36,7 @@ func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, red
 			{
 				public.POST("/register", authHandler.Register)
 				public.POST("/login", authHandler.Login)
+				public.POST("/login/2fa", authHandler.Login2FA)
 				public.POST("/verify-email", authHandler.VerifyEmail)
 				public.POST("/resend-verification-email", authHandler.ResendVerificationEmail)
 				public.POST("/forgot-password", authHandler.ForgotPassword)
@@ -54,7 +55,7 @@ func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, red
 				protected.GET("/profile", authHandler.GetProfile)
 				protected.GET("/sessions", authHandler.GetSessions)
 				protected.DELETE("/sessions/:id", authHandler.DeleteSession)
-				
+
 				// 2FA Management
 				protected.POST("/2fa/setup", authHandler.Setup2FA)
 				protected.POST("/2fa/verify", authHandler.Verify2FASetup)

@@ -26,13 +26,13 @@ func TestFindRoute(t *testing.T) {
 	svc := usecase.NewProxyUsecase(setupRoutes())
 
 	tests := []struct {
-		name         string
-		path         string
-		wantPrefix   string
-		wantTarget   string
-		wantPath     string
-		wantAuth     bool
-		wantErr      bool
+		name       string
+		path       string
+		wantPrefix string
+		wantTarget string
+		wantPath   string
+		wantAuth   bool
+		wantErr    bool
 	}{
 		{
 			name:       "match auth — exact prefix",
@@ -108,13 +108,13 @@ func TestBuildUpstreamRequest(t *testing.T) {
 	svc := usecase.NewProxyUsecase(setupRoutes())
 
 	tests := []struct {
-		name           string
-		method         string
-		path           string
-		query          string
-		headers        map[string]string
-		routePrefix    string
-		wantUpstream   string
+		name         string
+		method       string
+		path         string
+		query        string
+		headers      map[string]string
+		routePrefix  string
+		wantUpstream string
 	}{
 		{
 			name:         "GET with query params",
