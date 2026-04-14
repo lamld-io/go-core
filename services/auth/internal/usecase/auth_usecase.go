@@ -101,7 +101,7 @@ func (uc *authUsecase) Register(ctx context.Context, email, password, fullName s
 	return user, nil
 }
 
-func (uc *authUsecase) Login(ctx context.Context, email, password string) (*domain.User, *domain.TokenPair, error) {
+func (uc *authUsecase) Login(ctx context.Context, email, password string, meta domain.ClientMetadata) (*domain.User, *domain.TokenPair, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
 	user, err := uc.userRepo.GetByEmail(ctx, email)
@@ -148,7 +148,7 @@ func (uc *authUsecase) Login(ctx context.Context, email, password string) (*doma
 		slog.WarnContext(ctx, "failed to revoke old tokens on login", "error", err, "user_id", user.ID)
 	}
 
-	tokenPair, err := uc.generateTokenPair(ctx, user)
+	tokenPair, err := uc.generateTokenPair(ctx, user, meta)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -290,7 +290,7 @@ func (uc *authUsecase) ResetPassword(ctx context.Context, token, newPassword str
 	return nil
 }
 
-func (uc *authUsecase) RefreshToken(ctx context.Context, refreshTokenStr string) (*domain.TokenPair, error) {
+func (uc *authUsecase) RefreshToken(ctx context.Context, refreshTokenStr string, meta domain.ClientMetadata) (*domain.TokenPair, error) {
 	claims, err := uc.jwtManager.ValidateToken(refreshTokenStr)
 	if err != nil {
 		return nil, domain.ErrTokenInvalid
@@ -331,7 +331,7 @@ func (uc *authUsecase) RefreshToken(ctx context.Context, refreshTokenStr string)
 		return nil, domain.NewAccountLockedError(*user.LockedUntil)
 	}
 
-	tokenPair, err := uc.generateTokenPair(ctx, user)
+	tokenPair, err := uc.generateTokenPair(ctx, user, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func (uc *authUsecase) UpdateLoginLockoutPolicy(ctx context.Context, maxFailedAt
 }
 
 // generateTokenPair phát hành cặp access + refresh token và lưu refresh token vào DB.
-func (uc *authUsecase) generateTokenPair(ctx context.Context, user *domain.User) (*domain.TokenPair, error) {
+func (uc *authUsecase) generateTokenPair(ctx context.Context, user *domain.User, meta domain.ClientMetadata) (*domain.TokenPair, error) {
 	accessToken, err := uc.jwtManager.GenerateAccessToken(user.ID.String(), user.Email, user.Role)
 	if err != nil {
 		return nil, apperror.InternalError("failed to generate access token", err)
@@ -436,6 +436,9 @@ func (uc *authUsecase) generateTokenPair(ctx context.Context, user *domain.User)
 		TokenHash: tokenHash,
 		ExpiresAt: uc.now().Add(uc.jwtManager.GetRefreshTokenTTL()),
 		Revoked:   false,
+		IP:        meta.IP,
+		UserAgent: meta.UserAgent,
+		DeviceID:  meta.DeviceID,
 	}
 
 	if err := uc.tokenRepo.Create(ctx, storedToken); err != nil {

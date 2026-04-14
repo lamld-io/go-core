@@ -111,7 +111,7 @@ Người dùng ẩn danh (Guest) - Các tính năng 2FA và Session Management k
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
 | 1 | Rate Limiting | Cài đặt & cấu hình Gin Rate Limiter Middleware qua Redis | complete | - | - | .claude/PRPs/reports/rate-limiting-report.md |
-| 2 | Device Data & DB | Cập nhật Table RefreshToken (IP, Agent, DeviceID) | pending | with 1 | - | - |
+| 2 | Device Data & DB | Cập nhật Table RefreshToken (IP, Agent, DeviceID) | complete | with 1 | - | .claude/PRPs/reports/device-data-and-db-report.md |
 | 3 | Access Blacklist | Cơ chế Revoke Token và Middleware check Blacklist | pending | with 4 | 2 | - |
 | 4 | Session UI API | Các API Get / Delete Session cho Client Apps | pending | with 3 | 2 | - |
 | 5 | TOTP 2FA Core | Tích hợp thư viện OTP, API Enable/Verify 2FA | pending | - | 1, 2 | - |

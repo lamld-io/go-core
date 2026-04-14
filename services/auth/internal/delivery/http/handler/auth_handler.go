@@ -55,7 +55,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, tokenPair, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	meta := h.getClientMeta(c)
+	user, tokenPair, err := h.authService.Login(c.Request.Context(), req.Email, req.Password, meta)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -136,7 +137,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := h.authService.RefreshToken(c.Request.Context(), req.RefreshToken)
+	meta := h.getClientMeta(c)
+	tokenPair, err := h.authService.RefreshToken(c.Request.Context(), req.RefreshToken, meta)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -283,4 +285,23 @@ func (h *AuthHandler) HealthCheck(c *gin.Context) {
 func (h *AuthHandler) isAdmin(c *gin.Context) bool {
 	role, exists := middleware.GetRoleFromContext(c)
 	return exists && role == domain.RoleAdmin
+}
+
+func (h *AuthHandler) getClientMeta(c *gin.Context) domain.ClientMetadata {
+	deviceID := c.GetHeader("X-Device-ID")
+	// Giới hạn chiều dài nếu cần, hoặc để raw tuỳ thuộc vào client.
+	if len(deviceID) > 255 {
+		deviceID = deviceID[:255]
+	}
+
+	userAgent := c.Request.UserAgent()
+	if len(userAgent) > 512 {
+		userAgent = userAgent[:512]
+	}
+
+	return domain.ClientMetadata{
+		IP:        c.ClientIP(),
+		UserAgent: userAgent,
+		DeviceID:  deviceID,
+	}
 }

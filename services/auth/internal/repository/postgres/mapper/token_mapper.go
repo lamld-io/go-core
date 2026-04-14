@@ -14,6 +14,9 @@ func TokenToModel(t *domain.RefreshToken) *model.TokenModel {
 		ExpiresAt: t.ExpiresAt,
 		Revoked:   t.Revoked,
 		CreatedAt: t.CreatedAt,
+		IP:        t.IP,
+		UserAgent: t.UserAgent,
+		DeviceID:  t.DeviceID,
 	}
 }
 
@@ -26,5 +29,8 @@ func TokenToDomain(m *model.TokenModel) *domain.RefreshToken {
 		ExpiresAt: m.ExpiresAt,
 		Revoked:   m.Revoked,
 		CreatedAt: m.CreatedAt,
+		IP:        m.IP,
+		UserAgent: m.UserAgent,
+		DeviceID:  m.DeviceID,
 	}
 }
