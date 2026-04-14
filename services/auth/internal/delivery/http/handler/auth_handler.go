@@ -166,7 +166,13 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.Logout(c.Request.Context(), userID); err != nil {
+	authHeader := c.GetHeader(middleware.AuthorizationHeader)
+	var accessTokenStr string
+	if len(authHeader) > len(middleware.BearerPrefix) && authHeader[:len(middleware.BearerPrefix)] == middleware.BearerPrefix {
+		accessTokenStr = authHeader[len(middleware.BearerPrefix):]
+	}
+
+	if err := h.authService.Logout(c.Request.Context(), userID, accessTokenStr); err != nil {
 		response.Error(c, err)
 		return
 	}

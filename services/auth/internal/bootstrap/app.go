@@ -19,6 +19,7 @@ import (
 	"github.com/base-go/base/services/auth/internal/platform/logger"
 	"github.com/base-go/base/services/auth/internal/repository/postgres"
 	"github.com/base-go/base/services/auth/internal/repository/postgres/model"
+	"github.com/base-go/base/services/auth/internal/repository/redisrepo"
 	"github.com/base-go/base/services/auth/internal/usecase"
 	"github.com/redis/go-redis/v9"
 )
@@ -98,6 +99,8 @@ func NewApp() (*App, error) {
 	// 6. Khởi tạo adapter hạ tầng.
 	emailSender := platformemail.NewSender(cfg.Email)
 
+	tokenBlacklist := redisrepo.NewTokenBlacklist(redisClient)
+
 	// 7. Khởi tạo usecase.
 	authService := usecase.NewAuthUsecase(
 		userRepo,
@@ -106,6 +109,7 @@ func NewApp() (*App, error) {
 		lockoutPolicyRepo,
 		emailSender,
 		jwtManager,
+		tokenBlacklist,
 		cfg.Password,
 		cfg.Security,
 	)
@@ -115,7 +119,7 @@ func NewApp() (*App, error) {
 	authHandler := handler.NewAuthHandler(authService, accessTokenTTLSec)
 
 	// 9. Tạo router.
-	router := deliveryhttp.NewRouter(authHandler, jwtManager, redisClient, cfg)
+	router := deliveryhttp.NewRouter(authHandler, jwtManager, redisClient, tokenBlacklist, cfg)
 
 	// 10. Tạo HTTP server.
 	server := &http.Server{

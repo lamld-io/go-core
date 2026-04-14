@@ -7,12 +7,13 @@ import (
 	pkgmiddleware "github.com/base-go/base/pkg/middleware"
 	"github.com/base-go/base/services/auth/internal/delivery/http/handler"
 	"github.com/base-go/base/services/auth/internal/delivery/http/middleware"
+	"github.com/base-go/base/services/auth/internal/domain"
 	"github.com/base-go/base/services/auth/internal/platform/config"
 	"github.com/redis/go-redis/v9"
 )
 
 // NewRouter tạo Gin engine với tất cả route cho Auth Service.
-func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, redisClient *redis.Client, cfg *config.Config) *gin.Engine {
+func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, redisClient *redis.Client, tokenBlacklist domain.TokenBlacklist, cfg *config.Config) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -47,7 +48,7 @@ func NewRouter(authHandler *handler.AuthHandler, jwtManager *pkgjwt.Manager, red
 
 			// Protected endpoints — cần JWT access token
 			protected := auth.Group("")
-			protected.Use(middleware.AuthMiddleware(jwtManager))
+			protected.Use(middleware.AuthMiddleware(jwtManager, tokenBlacklist))
 			{
 				protected.POST("/logout", authHandler.Logout)
 				protected.GET("/profile", authHandler.GetProfile)

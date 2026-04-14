@@ -29,6 +29,7 @@ type authUsecase struct {
 	lockoutPolicyRepo domain.LoginLockoutPolicyRepository
 	emailSender       domain.EmailSender
 	jwtManager        *pkgjwt.Manager
+	tokenBlacklist    domain.TokenBlacklist
 	passwordPolicy    config.PasswordPolicy
 	securityConfig    config.SecurityConfig
 	now               func() time.Time
@@ -42,6 +43,7 @@ func NewAuthUsecase(
 	lockoutPolicyRepo domain.LoginLockoutPolicyRepository,
 	emailSender domain.EmailSender,
 	jwtManager *pkgjwt.Manager,
+	tokenBlacklist domain.TokenBlacklist,
 	passwordPolicy config.PasswordPolicy,
 	securityConfig config.SecurityConfig,
 ) domain.AuthService {
@@ -52,6 +54,7 @@ func NewAuthUsecase(
 		lockoutPolicyRepo: lockoutPolicyRepo,
 		emailSender:       emailSender,
 		jwtManager:        jwtManager,
+		tokenBlacklist:    tokenBlacklist,
 		passwordPolicy:    passwordPolicy,
 		securityConfig:    securityConfig,
 		now:               time.Now,
@@ -340,7 +343,16 @@ func (uc *authUsecase) RefreshToken(ctx context.Context, refreshTokenStr string,
 	return tokenPair, nil
 }
 
-func (uc *authUsecase) Logout(ctx context.Context, userID uuid.UUID) error {
+func (uc *authUsecase) Logout(ctx context.Context, userID uuid.UUID, accessTokenStr string) error {
+	if accessTokenStr != "" {
+		claims, err := uc.jwtManager.ValidateToken(accessTokenStr)
+		if err == nil && claims.TokenType == pkgjwt.AccessToken {
+			if err := uc.tokenBlacklist.BlacklistToken(ctx, claims.ID, claims.ExpiresAt.Time); err != nil {
+				slog.WarnContext(ctx, "failed to blacklist access token", "error", err, "user_id", userID)
+			}
+		}
+	}
+
 	if err := uc.tokenRepo.RevokeByUserID(ctx, userID); err != nil {
 		return apperror.InternalError("failed to revoke tokens", err)
 	}
