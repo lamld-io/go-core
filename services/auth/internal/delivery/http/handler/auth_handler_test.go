@@ -355,7 +355,8 @@ func setupTestRouter(t *testing.T) (*httptest.Server, *mockUserRepo, *mockEmailS
 	)
 
 	authHandler := handler.NewAuthHandler(authService, 900)
-	router := deliveryhttp.NewRouter(authHandler, jwtManager)
+	cfg := &config.Config{RateLimit: config.RateLimitConfig{LoginLimit: 1000000}}
+	router := deliveryhttp.NewRouter(authHandler, jwtManager, nil, cfg)
 	ts := httptest.NewServer(router)
 	t.Cleanup(ts.Close)
 

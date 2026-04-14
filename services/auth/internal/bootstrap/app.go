@@ -20,6 +20,7 @@ import (
 	"github.com/base-go/base/services/auth/internal/repository/postgres"
 	"github.com/base-go/base/services/auth/internal/repository/postgres/model"
 	"github.com/base-go/base/services/auth/internal/usecase"
+	"github.com/redis/go-redis/v9"
 )
 
 // App chứa tất cả dependency đã wire và server HTTP.
@@ -61,7 +62,22 @@ func NewApp() (*App, error) {
 	}
 	slog.Info("database migration completed")
 
-	// 4. Khởi tạo JWT Manager (Auth Service cần private key để sign).
+	// 4. Kết nối Redis.
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		slog.Warn("failed to connect to redis, rate limiter will use in-memory fallback", "error", err)
+		redisClient = nil
+	} else {
+		slog.Info("connected to redis successfully")
+	}
+
+	// 5. Khởi tạo JWT Manager (Auth Service cần private key để sign).
 	jwtManager, err := pkgjwt.NewManager(pkgjwt.Config{
 		PrivateKeyPath:  cfg.JWT.PrivateKeyPath,
 		PublicKeyPath:   cfg.JWT.PublicKeyPath,
@@ -99,7 +115,7 @@ func NewApp() (*App, error) {
 	authHandler := handler.NewAuthHandler(authService, accessTokenTTLSec)
 
 	// 9. Tạo router.
-	router := deliveryhttp.NewRouter(authHandler, jwtManager)
+	router := deliveryhttp.NewRouter(authHandler, jwtManager, redisClient, cfg)
 
 	// 10. Tạo HTTP server.
 	server := &http.Server{
