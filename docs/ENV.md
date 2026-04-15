@@ -1,12 +1,12 @@
 # Tài Liệu ENV — Biến Môi Trường
 
-> Sinh từ `.env.example` của từng service. Cập nhật lần cuối: 2026-04-14.
+> Sinh từ `.env.example` và `config.go` của từng service. Cập nhật lần cuối: 2026-04-15.
 
 ---
 
 ## Auth Service
 
-**File nguồn:** `services/auth/configs/.env.example`
+**File nguồn:** `services/auth/configs/.env.example` + `services/auth/internal/platform/config/config.go`
 
 <!-- AUTO-GENERATED -->
 ### App & Server
@@ -28,6 +28,26 @@
 | `DB_PASSWORD` | **Có** | _(strong password)_ | Password PostgreSQL. **KHÔNG dùng default trong production.** |
 | `DB_NAME` | Không | `auth_db` | Tên database. |
 | `DB_SSLMODE` | Không | `disable` / `require` | SSL mode. Dùng `require` khi DB ở server riêng. |
+
+### Redis
+
+Auth Service sử dụng Redis cho **token blacklist** (logout an toàn) và **rate limiting** per-IP trên endpoint nhạy cảm (login, register). Nếu Redis không khả dụng, service tự động fallback sang in-memory — chấp nhận mất trạng thái khi restart.
+
+| Biến | Bắt buộc | Ví dụ | Mô tả |
+|------|----------|-------|-------|
+| `REDIS_HOST` | Không | `localhost` hoặc `redis` (Docker) | Host Redis server. Default: `localhost`. |
+| `REDIS_PORT` | Không | `6379` | Port Redis. Default: `6379`. |
+| `REDIS_PASSWORD` | Không | _(trống)_ | Password Redis. Để trống nếu không yêu cầu auth. |
+| `REDIS_DB` | Không | `0` | Redis DB index (0–15). Default: `0`. |
+
+### Rate Limiting
+
+Rate limiting per-IP sử dụng Redis (hoặc in-memory fallback). Áp dụng cho các endpoint public để chống brute-force.
+
+| Biến | Bắt buộc | Ví dụ | Mô tả |
+|------|----------|-------|-------|
+| `RATE_LIMIT_LOGIN` | Không | `5` | Số request login tối đa per IP per phút. Default: `5`. |
+| `RATE_LIMIT_GENERAL` | Không | `100` | Số request chung tối đa per IP per phút. Default: `100`. |
 
 ### JWT (RSA Keys)
 
@@ -131,7 +151,7 @@ routes:
 | `RATE_LIMIT_RPS` | Không | `100` | Request/giây tối đa per IP (token bucket algorithm). |
 | `RATE_LIMIT_BURST` | Không | `200` | Burst size — số request tức thời được phép vượt RPS. |
 
-> **Lưu ý**: Rate limiter dùng in-memory, reset khi service restart. Nếu chạy nhiều Gateway instance, cần Redis rate limiter.
+> **Lưu ý**: Rate limiter của Gateway dùng in-memory (`golang.org/x/time/rate`). Rate limiter của Auth Service endpoint login dùng Redis (`go-redis/redis_rate`).
 
 ### Proxy Settings
 
@@ -156,6 +176,12 @@ DB_USER=auth_user
 DB_PASSWORD=<strong-random-password>
 DB_NAME=auth_db
 DB_SSLMODE=require
+REDIS_HOST=redis.internal
+REDIS_PORT=6379
+REDIS_PASSWORD=<redis-password>
+REDIS_DB=0
+RATE_LIMIT_LOGIN=5
+RATE_LIMIT_GENERAL=100
 JWT_PRIVATE_KEY_PATH=/run/secrets/jwt_private.pem
 JWT_PUBLIC_KEY_PATH=/run/secrets/jwt_public.pem
 JWT_ACCESS_TOKEN_TTL=15m

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "ecc.install.v1",
-  "installedAt": "2026-04-14T03:28:43.863Z",
+  "installedAt": "2026-04-15T02:19:12.184Z",
   "target": {
     "id": "antigravity-project",
     "target": "antigravity",
@@ -44,7 +44,7 @@
   },
   "source": {
     "repoVersion": "1.10.0",
-    "repoCommit": "e0ddb331f67bb5ddabeaf4874a28d54f4b3b836e",
+    "repoCommit": "ecc5e0e2d60e7d3faeddc78d223de8de95086ae2",
     "manifestVersion": 1
   },
   "operations": [

@@ -178,6 +178,9 @@ benchmark-*.txt
 .agent/cache/
 .agent/.session/
 
+# Claude local settings (có thể chứa API keys/auth tokens)
+.claude/settings.local.json
+
 # =============================================================================
 # Python (dùng trong .agent/skills scripts)
 # =============================================================================
