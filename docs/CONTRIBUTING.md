@@ -1,6 +1,6 @@
 # Hướng Dẫn Đóng Góp (Contributing Guide)
 
-> Sinh từ source code thực tế. Cập nhật lần cuối: 2026-04-14.
+> Sinh từ source code thực tế. Cập nhật lần cuối: 2026-04-15.
 
 ## Mục Lục
 
@@ -17,12 +17,14 @@
 
 ## Yêu Cầu Môi Trường
 
-| Công cụ      | Phiên bản tối thiểu | Ghi chú                                      |
-|-------------|---------------------|----------------------------------------------|
-| Go          | 1.25.0              | Xem `go.mod`                                 |
-| Docker      | 24+                 | Cần cho PostgreSQL và chạy toàn bộ stack     |
-| Docker Compose | v2+              | Tích hợp sẵn trong Docker Desktop            |
-| `psql` / `migrate` | Tuỳ chọn   | Nếu muốn chạy migration thủ công             |
+| Công cụ         | Phiên bản tối thiểu | Ghi chú                                      |
+|-----------------|---------------------|----------------------------------------------|
+| Go              | 1.25.0              | Xem `go.mod`                                 |
+| Docker          | 24+                 | Cần cho PostgreSQL và chạy toàn bộ stack     |
+| Docker Compose  | v2+                 | Tích hợp sẵn trong Docker Desktop            |
+| Redis           | 7+                  | Tuỳ chọn — có fallback in-memory             |
+| `psql` / `migrate` | Tuỳ chọn         | Nếu muốn chạy migration thủ công             |
+| OpenSSL         | Bất kỳ              | Cần để sinh RSA key pair cho JWT             |
 
 ---
 
@@ -45,7 +47,7 @@ openssl rsa -in configs\keys\private.pem -pubout -out configs\keys\public.pem
 ```powershell
 # Auth Service
 Copy-Item services\auth\configs\.env.example services\auth\configs\.env
-# Chỉnh sửa .env nếu cần (DB password, SMTP, v.v.)
+# Chỉnh sửa .env nếu cần (DB password, SMTP, Redis, v.v.)
 
 # Gateway Service
 Copy-Item services\gateway\configs\.env.example services\gateway\configs\.env
@@ -62,7 +64,16 @@ Services sẽ khởi động theo thứ tự:
 2. **Auth Service** (port `8081`) — chờ PostgreSQL healthy
 3. **Gateway** (port `8080`) — chờ Auth Service
 
-### 4. Kiểm tra health
+### 4. (Tuỳ chọn) Khởi động Redis
+
+```powershell
+# Redis cho token blacklist và rate limiting
+docker run -d --name base-redis -p 6379:6379 redis:7-alpine
+```
+
+> **Lưu ý**: Nếu Redis không chạy, Auth Service tự động fallback sang in-memory. Rate limiter và token blacklist vẫn hoạt động nhưng mất trạng thái khi service restart.
+
+### 5. Kiểm tra health
 
 ```powershell
 # Gateway (entry point)
@@ -107,7 +118,7 @@ Invoke-WebRequest http://localhost:8081/health
 ### Chạy Service Trực Tiếp (không Docker)
 
 ```powershell
-# Auth Service (cần PostgreSQL đang chạy)
+# Auth Service (cần PostgreSQL đang chạy, Redis tuỳ chọn)
 $env:SERVER_PORT="8081"; $env:DB_HOST="localhost"; go run ./services/auth/cmd/auth
 
 # Gateway
@@ -119,61 +130,29 @@ $env:SERVER_PORT="8080"; go run ./services/gateway/cmd/gateway
 
 ## Biến Môi Trường
 
+Xem danh sách đầy đủ tại [docs/ENV.md](ENV.md). Dưới đây là tóm tắt các biến quan trọng:
+
 <!-- AUTO-GENERATED -->
-### Auth Service (`services/auth/configs/.env.example`)
+### Auth Service — Biến quan trọng
 
 | Biến | Bắt buộc | Mô tả | Giá trị mặc định |
-|------|----------|-------|-----------------|
-| `APP_ENV` | Không | Môi trường chạy | `development` |
-| `SERVER_PORT` | Không | Port HTTP của Auth Service | `8081` |
-| `SERVER_READ_TIMEOUT` | Không | Timeout đọc request | `15s` |
-| `SERVER_WRITE_TIMEOUT` | Không | Timeout ghi response | `15s` |
-| `DB_HOST` | Có | Host PostgreSQL | `localhost` |
-| `DB_PORT` | Không | Port PostgreSQL | `5432` |
-| `DB_USER` | Có | User PostgreSQL | `postgres` |
-| `DB_PASSWORD` | **Có** | Password PostgreSQL | _(trống)_ |
-| `DB_NAME` | Không | Tên database | `auth_db` |
-| `DB_SSLMODE` | Không | SSL mode kết nối DB | `disable` |
-| `JWT_PRIVATE_KEY_PATH` | **Có** | Đường dẫn RSA private key (PEM) | `configs/keys/private.pem` |
-| `JWT_PUBLIC_KEY_PATH` | **Có** | Đường dẫn RSA public key (PEM) | `configs/keys/public.pem` |
-| `JWT_ACCESS_TOKEN_TTL` | Không | Thời hạn access token | `15m` |
-| `JWT_REFRESH_TOKEN_TTL` | Không | Thời hạn refresh token | `168h` (7 ngày) |
-| `JWT_ISSUER` | Không | JWT issuer claim | `auth-service` |
-| `PASSWORD_MIN_LENGTH` | Không | Độ dài mật khẩu tối thiểu | `8` |
-| `PASSWORD_REQUIRE_UPPERCASE` | Không | Bắt buộc chữ hoa | `false` |
-| `PASSWORD_REQUIRE_LOWERCASE` | Không | Bắt buộc chữ thường | `false` |
-| `PASSWORD_REQUIRE_DIGIT` | Không | Bắt buộc chữ số | `false` |
-| `PASSWORD_REQUIRE_SPECIAL` | Không | Bắt buộc ký tự đặc biệt | `false` |
-| `EMAIL_VERIFICATION_TOKEN_TTL` | Không | TTL token xác thực email | `24h` |
-| `PASSWORD_RESET_TOKEN_TTL` | Không | TTL token đặt lại mật khẩu | `30m` |
-| `LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS` | Không | Số lần đăng nhập sai tối đa | `5` |
-| `LOGIN_LOCKOUT_DURATION` | Không | Thời gian khoá tài khoản | `15m` |
-| `SMTP_HOST` | Không | SMTP server host | _(trống = log-only)_ |
-| `SMTP_PORT` | Không | SMTP server port | `587` |
-| `SMTP_USERNAME` | Không | SMTP username | _(trống)_ |
-| `SMTP_PASSWORD` | Không | SMTP password | _(trống)_ |
-| `SMTP_FROM_EMAIL` | Không | Email gửi đi | `no-reply@example.com` |
-| `SMTP_FROM_NAME` | Không | Tên hiển thị email | `Base Auth` |
+|------|----------|-------|-----------------| 
+| `DB_HOST` / `DB_PASSWORD` | **Có** | Kết nối PostgreSQL | `localhost` / `postgres` |
+| `JWT_PRIVATE_KEY_PATH` | **Có** | RSA private key (PEM) để ký JWT | `configs/keys/private.pem` |
+| `JWT_PUBLIC_KEY_PATH` | **Có** | RSA public key (PEM) để verify JWT | `configs/keys/public.pem` |
+| `REDIS_HOST` | Không | Host Redis (blacklist, rate limit) | `localhost` |
+| `REDIS_PORT` | Không | Port Redis | `6379` |
+| `RATE_LIMIT_LOGIN` | Không | Giới hạn request login per IP per phút | `5` |
+| `RATE_LIMIT_GENERAL` | Không | Giới hạn request chung per IP per phút | `100` |
+| `SMTP_HOST` | Không | SMTP server (trống = log-only) | _(trống)_ |
 
-> **Lưu ý SMTP**: Nếu `SMTP_HOST` để trống, email sẽ được log ra stdout thay vì gửi thật — tiện cho local dev.
-
-### Gateway Service (`services/gateway/configs/.env.example`)
+### Gateway Service — Biến quan trọng
 
 | Biến | Bắt buộc | Mô tả | Giá trị mặc định |
-|------|----------|-------|-----------------|
-| `APP_ENV` | Không | Môi trường chạy | `development` |
-| `SERVER_PORT` | Không | Port HTTP của Gateway | `8080` |
-| `SERVER_READ_TIMEOUT` | Không | Timeout đọc request | `15s` |
-| `SERVER_WRITE_TIMEOUT` | Không | Timeout ghi response | `30s` |
-| `JWT_PUBLIC_KEY_PATH` | **Có** | Đường dẫn RSA public key (PEM) | `configs/keys/public.pem` |
-| `JWT_ISSUER` | Không | JWT issuer cần match với Auth | `auth-service` |
-| `ROUTES_CONFIG_PATH` | Không | Đường dẫn file routes.yaml | `configs/routes.yaml` |
+|------|----------|-------|-----------------| 
+| `JWT_PUBLIC_KEY_PATH` | **Có** | RSA public key — cùng key với Auth | `configs/keys/public.pem` |
 | `RATE_LIMIT_ENABLED` | Không | Bật rate limiting per-IP | `true` |
-| `RATE_LIMIT_RPS` | Không | Requests/giây tối đa | `100` |
-| `RATE_LIMIT_BURST` | Không | Burst size | `200` |
-| `PROXY_TIMEOUT` | Không | Timeout proxy request | `30s` |
-| `PROXY_MAX_IDLE_CONNS` | Không | Max idle connections | `100` |
-| `PROXY_IDLE_CONN_TIMEOUT` | Không | Idle connection timeout | `90s` |
+| `RATE_LIMIT_RPS` / `RATE_LIMIT_BURST` | Không | Request/giây và burst size | `100` / `200` |
 <!-- AUTO-GENERATED -->
 
 ---
@@ -207,13 +186,14 @@ go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out -o coverage.html
 ```
 
-### Integration Tests (cần DB)
+### Integration Tests (cần DB + Redis)
 
 ```powershell
-# Khởi động PostgreSQL trước
+# Khởi động dependencies
 docker compose up -d postgres
+docker run -d --name base-redis -p 6379:6379 redis:7-alpine
 
-# Chờ DB healthcheck xong rồi chạy
+# Chạy integration tests
 go test -tags=integration ./...
 ```
 
@@ -221,7 +201,7 @@ go test -tags=integration ./...
 
 ## Kiến Trúc Dự Án
 
-Xem chi tiết tại: [docs/huong-dan-them-service-moi.md](../docs/huong-dan-them-service-moi.md)
+Xem chi tiết tại: [docs/huong-dan-them-service-moi.md](huong-dan-them-service-moi.md)
 
 ### Cấu Trúc Thư Mục
 
@@ -234,10 +214,17 @@ base/
 ├── pkg/                      # Shared packages
 │   ├── apperror/             # AppError → HTTP status tự động
 │   ├── jwt/                  # JWT Manager (RSA sign & verify)
-│   ├── middleware/           # CORS middleware dùng chung
+│   ├── middleware/           # CORS, IP Rate Limiter (Redis)
 │   └── response/             # Response helper chuẩn cho Gin
 ├── services/
 │   ├── auth/                 # Auth Service (port 8081)
+│   │   └── internal/
+│   │       ├── domain/       # Entity, interfaces, errors
+│   │       ├── usecase/      # Business logic
+│   │       ├── delivery/http/ # Gin handlers, router
+│   │       ├── repository/   # PostgreSQL (GORM) + Redis repos
+│   │       ├── platform/     # Config, DB, logger, email
+│   │       └── bootstrap/    # Dependency wiring
 │   └── gateway/              # API Gateway (port 8080)
 └── docs/                     # Tài liệu
 ```
@@ -245,14 +232,14 @@ base/
 ### Quy Tắc Phụ Thuộc (Clean Architecture)
 
 ```
-delivery (Gin handler) → usecase → domain ← repository (GORM)
+delivery (Gin handler) → usecase → domain ← repository (GORM + Redis)
                                         ↑
-                              platform (config, DB, logger)
+                              platform (config, DB, Redis, logger, email)
 ```
 
 - **domain**: Không import bất kỳ framework nào ngoài stdlib và `pkg/apperror`
 - **usecase**: Chỉ import domain interfaces
-- **repository**: Implement domain interfaces, dùng GORM
+- **repository**: Implement domain interfaces, dùng GORM (PostgreSQL) và go-redis
 - **delivery**: Gọi usecase qua domain interface, dùng Gin
 - **platform**: Cung cấp hạ tầng, không chứa business logic
 
@@ -287,6 +274,7 @@ delivery (Gin handler) → usecase → domain ← repository (GORM)
 - [ ] Thêm test cho logic mới
 - [ ] Comment tiếng Anh cho exported symbols
 - [ ] Cập nhật `.env.example` nếu thêm biến môi trường mới
+- [ ] Kiểm tra Redis fallback hoạt động khi Redis down
 
 ---
 
