@@ -34,7 +34,7 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: development
-      SERVER_PORT: "8081"
+      SERVER_PORT: "9081"
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_USER: postgres
@@ -48,7 +48,7 @@ services:
       JWT_ISSUER: auth-service
       PASSWORD_MIN_LENGTH: "8"
     ports:
-      - "8081:8081"
+      - "9081:9081"
     volumes:
       - ./configs/keys:/app/configs/keys:ro
 
@@ -65,7 +65,7 @@ services:
       - auth-service
     environment:
       APP_ENV: development
-      SERVER_PORT: "8080"
+      SERVER_PORT: "9080"
       JWT_PUBLIC_KEY_PATH: /app/configs/keys/public.pem
       JWT_ISSUER: auth-service
       ROUTES_CONFIG_PATH: /app/configs/routes.yaml
@@ -74,7 +74,7 @@ services:
       RATE_LIMIT_BURST: "200"
       PROXY_TIMEOUT: 30s
     ports:
-      - "8080:8080"
+      - "9080:9080"
     volumes:
       - ./configs/keys:/app/configs/keys:ro
       - ./services/gateway/configs/routes.docker.yaml:/app/configs/routes.yaml:ro
