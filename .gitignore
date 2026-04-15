@@ -178,6 +178,9 @@ benchmark-*.txt
 .agent/cache/
 .agent/.session/
 
+# Local clone / detached gitlink không còn quản lý trong repo chính
+everything-claude-code/
+
 # Claude local settings (có thể chứa API keys/auth tokens)
 .claude/settings.local.json
 
